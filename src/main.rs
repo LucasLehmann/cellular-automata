@@ -3,28 +3,32 @@ use std::io::Write;
 fn main() {
     let mut game;
     {
-        use terminal_size::{terminal_size, Height, Width};
         let args: Vec<String> = std::env::args().collect();
-        if args.len() == 3 {
-            game = vec![vec![false; args[1].parse().unwrap()]; args[2].parse().unwrap()];
-        } else if let Some((Width(w), Height(h))) = terminal_size() {
-            game = vec![vec![false; w as usize - 2]; h as usize - 4];
-        } else {
-            game = vec![vec![false; 10]; 10];
+        {
+            use terminal_size::{terminal_size, Height, Width};
+            if args.len() >= 3 {
+                game = vec![vec![false; args[1].parse().unwrap()]; args[2].parse().unwrap()];
+            } else if let Some((Width(w), Height(h))) = terminal_size() {
+                game = vec![vec![false; w as usize - 2]; h as usize - 4];
+            } else {
+                game = vec![vec![false; 10]; 10];
+            }
         }
-    }
 
-    {
-        use rand::random;
-        for i in 0..game.len() {
-            for j in 0..game[0].len() {
-                game[i][j] = random();
+        {
+            use rand::random;
+            for i in 0..game.len() {
+                for j in 0..game[0].len() {
+                    game[i][j] = random::<u8>() < 32;
+                }
             }
         }
     }
 
     println!("{}", render_frame(&game));
     let mut full_render: u8 = 0;
+    let mut d1 = vec![];
+    let mut d2 = vec![];
     loop {
         // Up: \u001b[{n}A
         // Down: \u001b[{n}B
@@ -33,13 +37,13 @@ fn main() {
         // print!("\x1B[2J\x1B[1;1H"); // Clear screen and move cursor to top
 
         let delta = tick(&game);
-        for (a, b) in delta {
-            game[a][b] = !game[a][b];
+        for (a, b) in &delta {
+            game[*a][*b] = !game[*a][*b];
             print!(
                 "\x1B[{};{}H{}",
-                a + 2,
-                b + 2,
-                if game[a][b] { "#" } else { " " }
+                *a + 2,
+                *b + 2,
+                if game[*a][*b] { "#" } else { " " }
             );
         }
 
@@ -51,6 +55,14 @@ fn main() {
         print!("\x1B[{};{}H", game.len() + 3, 1);
         std::io::stdout().flush().unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
+
+        if delta == d1 || delta == d2 {
+            println!("repeating pattern");
+            break;
+        } else {
+            d1 = d2;
+            d2 = delta;
+        }
     }
 }
 
@@ -79,7 +91,7 @@ fn tick(game: &Vec<Vec<bool>>) -> Vec<(usize, usize)> {
     // Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
     for i in 0..game.len() {
         for j in 0..game[i].len() {
-            if game[i][j] != evaluate_weight(game[i][j], weight(game, i, j, (false, false))) {
+            if game[i][j] != evaluate_weight(game[i][j], weight(game, i, j, (true, true))) {
                 delta.push((i, j));
             }
         }
