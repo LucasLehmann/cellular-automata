@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::Write;
 
 struct Game {
     board: Vec<Vec<Cell>>,
@@ -52,7 +52,7 @@ impl Game {
             game_frame.push_str(&format!("|{line}|\n"));
         }
         game_frame.push_str(&format!("|{separator}|\n"));
-        game_frame
+        return game_frame;
     }
 
     fn partial_render(&self, delta: &Vec<(usize, usize)>) {
@@ -63,6 +63,10 @@ impl Game {
                 i.0 + 2,
                 i.1 + 2,
                 if self.board[i.0][i.1].state != 0 {
+                    //let a = (rand::random::<u8>() % 7) + 1;
+                    //format!("\x1B[0;{0};{1}m#\x1B[0;30;40m", a + 30, a + 40)
+                    //let a = ((i.0 + i.1) % 7) + 1;
+                    //format!("\x1B[0;{0};{1}m#\x1B[0m", a + 30, a + 40)
                     "#"
                 } else {
                     " "
@@ -152,7 +156,7 @@ impl Game {
             }
         }
 
-        count
+        return count;
     }
 }
 
@@ -196,7 +200,7 @@ fn main() {
             use rand::random;
             for i in 0..game.x_len() {
                 for j in 0..game.y_len() {
-                    game.board[i][j] = (random::<u8>() < 32).into();
+                    game.board[i][j] = (random::<u8>() < 64).into();
                 }
             }
         }
@@ -226,7 +230,7 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(10));
 
         if delta == d1 || delta == d2 {
-            print!("repeating pattern");
+            println!("repeating pattern");
             break;
         } else {
             d1 = d2;
